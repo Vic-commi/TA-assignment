@@ -1,2 +1,38 @@
 <%- contentFor('body') %> 
 <h1><%= arrangement.name %></h1>
+<p>
+    <strong>Flower Studio:</strong> <%= arrangement.displayName %>
+</p>
+
+<img src="<%= arrangement.imageUrl %>" alt="<%= arrangement.name %>" width = "300">
+
+<h4>Flowers Used</h4>
+
+<ul>
+    <% arrangement.flowers?.forEach((flower) => { %>
+        <div class="border rounded p-3 mb-3">
+            <li> Flower Name: <%= flower.name %></li>
+            <li> Quantity: <%= flower.quantity %></li>
+        </div>
+    <% }) %>
+</ul>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Reviews</h4>
+    <a href="/arrangements/<%= arrangement._id %>/reviews/add" class="btn btn-secondary">Add Review</a>
+</div>
+<ul>
+    <% arrangement.reviews?.forEach((review) => { %>
+        <div class="border rounded p-3 mb-3 d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <li> Rating: <%= review.rating %></li>
+                <li> Review: <%= review.content %></li>
+            </div>
+
+            <div>
+                <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/update" class="btn btn-secondary">edit</a>
+                <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/delete" class="btn btn-danger">delete</a>
+            </div>
+        </div>
+    <% }) %>
+</ul>

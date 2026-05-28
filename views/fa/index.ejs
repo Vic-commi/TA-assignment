@@ -22,7 +22,7 @@
     <% arrangements.forEach((arrangement)=> { %>
         <tr>
             <td>
-                <a href="/arrangements/details" class="text-reset text-decoration-none"><%= arrangement?.name %></a>
+                <a href="/arrangements/<%= arrangement._id %>/details" class="text-reset text-decoration-none"><%= arrangement?.name %></a>
             </td>
             <td>
                 <p><%= arrangement?.displayName %></p>

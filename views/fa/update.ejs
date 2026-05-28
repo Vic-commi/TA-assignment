@@ -1,5 +1,5 @@
 <%- contentFor('body') %>
-<form method="post">
+<form method="post" action="/arrangements/<%= arrangement._id %>/update?_method=PUT">
     <%- include('form', {arrangement: arrangement}) %>
 
     <button type="submit" class="btn btn-primary">update arrangement</button>

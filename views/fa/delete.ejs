@@ -1,6 +1,6 @@
 <%- contentFor('body') %>
 <h1>Delete flower arrangement: <%= arrangement?._id %></h1>
-<form method="post">
+<form method="post" action="/arrangements/<%=arrangement._id%>/delete?_method=DELETE">
     <p>Please confirm the deletion of customer <%= arrangement?.name%> by <%=arrangement?.displayName%>. This action cannot be undone</p>    
     <button type="submit" class="btn btn-danger">Confirm Delete</button>
 </form>

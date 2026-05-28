@@ -1,0 +1,6 @@
+<%- contentFor('body') %>
+<form method="post" action="/arrangements/<%= arrangement._id %>/reviews/<%= arrangement.reviews[0]._id %>/update?_method=PUT" >
+    <%- include ('form', {review: arrangement.reviews[0]}) %>
+
+    <button type="submit" class="btn btn-primary">update review</button>
+</form>
