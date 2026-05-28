@@ -13,8 +13,100 @@
     </div>
     <div>
         <label for="imageUrl">
-            image url
+            Image url
         </label>
         <input type="text" class="form-control" name="imageUrl" value="<%= arrangement?.imageUrl %>">
     </div>
+
+    <div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label>Flowers Used</label>
+
+            <button type="button" class="btn btn-sm btn-primary" id="addFlowerBtn">Add Flower</button>
+        </div>
+
+        <div id="flowerContainer">
+            <% if(arrangement?.flowers?.length !== 0) { %>
+                <% arrangement.flowers.forEach((flower, index) => { %>
+                    <div class="flower-item border rounded p-3 mb-3">
+
+                        <div class="mb-2">
+                            <label>Flower Name</label>
+                            <input type="text" class="form-control" name="flowers[<%= index %>][name]" value="<%= flower.name %>" required >
+                        </div>
+
+                        <div class="mb-2">
+                            <label>Quantity</label>
+                            <input type="number" class="form-control" name="flowers[<%= index %>][quantity]" min="1" value="<%= flower.quantity %>" >
+                        </div>
+
+                        <button type="button" class="btn btn-danger btn-sm removeFlowerBtn">Remove</button>
+
+                    </div>
+                <% }) %>
+            <% } else { %> 
+                <div class="flower-item border rounded p-3 mb-3">
+                    <div class="mb-2">
+                        <label>Flower Name</label>
+                        <input type="text" class="form-control" name="flowers[0][name]" value="" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label>Quantity</label>
+                        <input type="number" class="form-control" name="flowers[0][quantity]" min="1" value="">
+                    </div>
+
+                        <button type="button" class="btn btn-danger btn-sm removeFlowerBtn">Remove</button>
+                </div>
+            <% } %>
+        </div>
+
+    </div>
+
 </div>
+
+
+<script>
+    const flowerContainer = document.getElementById("flowerContainer");
+    const addFlowerBtn = document.getElementById("addFlowerBtn");
+
+    let flowerIndex = <%= arrangement?.flowers?.length || 1 %>;
+
+    addFlowerBtn.addEventListener("click", () => {
+
+        const flowerDiv = document.createElement("div");
+
+        flowerDiv.classList.add(
+            "flower-item",
+            "border",
+            "rounded",
+            "p-3",
+            "mb-3"
+        );
+
+        flowerDiv.innerHTML = `
+            <div class="mb-2">
+                <label>Flower Name</label>
+                <input type="text" class="form-control" name="flowers[${flowerIndex}][name]" required>
+            </div>
+
+            <div class="mb-2">
+                <label>Quantity</label>
+                <input type="number" class="form-control" name="flowers[${flowerIndex}][quantity]" min="1" >
+            </div>
+
+            <button type="button" class="btn btn-danger btn-sm removeFlowerBtn">Remove</button>
+        `;
+
+        flowerContainer.appendChild(flowerDiv);
+
+        flowerIndex++;
+    });
+
+    flowerContainer.addEventListener("click", (e) => {
+        if (e.target.classList.contains("removeFlowerBtn")) {
+            e.target.closest(".flower-item").remove();
+        }
+    });
+
+</script>

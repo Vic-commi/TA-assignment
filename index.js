@@ -39,16 +39,17 @@ async function main () {
 
         app.post('/arrangements/add', async (req,res) => {
             try {
-                const { name, displayName, imageUrl } = req.body;
+                const { name, displayName, imageUrl , flowers } = req.body;
 
-                if(!name || !displayName || !imageUrl) {
+                if(!name || !displayName || !imageUrl || !flowers) {
                     return res.status(400).send("missing required field");
                 }
 
                 await db.collection('arrangements').insertOne({
                     name: name,
                     imageUrl: imageUrl,
-                    displayName: displayName
+                    displayName: displayName,
+                    flowers: flowers
                 })
 
                 res.redirect('/arrangements');
@@ -73,17 +74,24 @@ async function main () {
 
         app.post('/arrangements/:arrangementId/update', async (req,res) => {
             try {
-                const { name, displayName, imageUrl } = req.body;
+                const { arrangementId } = req.params;
+                const { name, displayName, imageUrl, flowers } = req.body;
 
-                if(!name || !displayName || !imageUrl) {
+                if(!name || !displayName || !imageUrl || !flowers) {
                     return res.status(400).send("missing required field");
                 }
 
-                await db.collection('arrangements').insertOne({
-                    name: name,
-                    imageUrl: imageUrl,
-                    displayName: displayName
-                })
+                const updatedFA = {
+                    name,
+                    imageUrl,
+                    displayName,
+                    flowers
+                }
+                
+                await db.collection('arrangements').updateOne(
+                    {_id: new ObjectId(arrangementId)},
+                    { $set: updatedFA }
+                )
 
                 res.redirect('/arrangements');
 
