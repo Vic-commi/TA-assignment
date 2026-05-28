@@ -1,0 +1,42 @@
+<%- contentFor('body') %>
+<h1>Arrangement Lists</h1>
+
+<table class="table">
+    <tr>
+        <td>
+            <h3>Name</h3>
+        </td>
+        <td>
+            <h3>Studio</h3>
+        </td>
+        <td>
+            <h3>Link</h3>
+        </td>
+        <td>
+            <h3>Edit</h3>
+        </td>
+        <td>
+            <h3>Delete</h3>
+        </td>
+    </tr>
+    <% arrangements.forEach((arrangement)=> { %>
+        <tr>
+            <td>
+                <a href="/arrangements/details" class="text-reset text-decoration-none"><%= arrangement?.name %></a>
+            </td>
+            <td>
+                <p><%= arrangement?.displayName %></p>
+            </td>
+            <td>
+                <a href="<%= arrangement?.imageUrl %>">link</a>
+            </td>
+            <td>
+                <a href="/arrangements/<%= arrangement?._id %>/update" class="btn btn-secondary">Update</a>
+            </td>
+            <td>
+                <a href="/arrangements/<%= arrangement?._id %>/delete" class="btn btn-danger">Delete</a>
+            </td>
+        </tr>
+    <% }); %> 
+</table>
+<a href="/arrangements/add" class="btn btn-primary">add new flower arrangement</a>
