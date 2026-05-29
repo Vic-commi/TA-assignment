@@ -29,10 +29,12 @@
                 <li> Review: <%= review.content %></li>
             </div>
 
-            <div>
-                <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/update" class="btn btn-secondary">edit</a>
-                <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/delete" class="btn btn-danger">delete</a>
-            </div>
+            <% if(review.createdBy == user.user_id) { %> 
+                <div>
+                    <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/update" class="btn btn-secondary">edit</a>
+                    <a href="/arrangements/<%= arrangement._id %>/reviews/<%= review._id %>/delete" class="btn btn-danger">delete</a>
+                </div>
+            <% } %>
         </div>
     <% }) %>
 </ul>

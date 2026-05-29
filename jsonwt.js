@@ -15,6 +15,9 @@ const generateAccessToken = (id, email) => {
 
 const verifyToken = (req, res, next) => {
     const token = req.cookies.token;
+    // const authHeader = req.headers['authorization'];
+    // const token = authHeader && authHeader.split(' ')[1];
+
     if (!token) return res.status(401).send("Access Denied");
     jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
         if (err) return res.status(403).send("Invalid Token");
@@ -23,4 +26,19 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-module.exports = { generateAccessToken, verifyToken };
+const isUserRegistered = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if(!token) {
+        req.user = null;
+        next();
+    }
+
+    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
+        req.user = user;
+        next();
+    });
+
+}
+
+module.exports = { generateAccessToken, verifyToken, isUserRegistered };

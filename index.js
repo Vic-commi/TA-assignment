@@ -22,13 +22,14 @@ app.set('view engine', 'ejs');
 app.use(expressLayouts);
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+// app.use(express.json());
 app.use(methodOverride('_method'))
 app.use(cookieParser());
 
 app.set('layout', 'layout/base');
 
 const path = require('path');
-const { generateAccessToken, verifyToken } = require('./jsonwt');
+const { generateAccessToken, verifyToken, isUserRegistered } = require('./jsonwt');
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
 app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
 
@@ -50,9 +51,11 @@ async function main () {
 
             if(!email || !password) return res.status(400).send("Missing required fields");
 
+            const hashedPass = await bcrypt.hash(password, 10);
+
             const newUser = {
                 email,
-                password
+                password: hashedPass
             }
 
             await db.collection('users').insertOne(newUser);
@@ -73,10 +76,12 @@ async function main () {
             const user = await db.collection('users').findOne({ email: email })
             if(!user) return res.status(404).send("User Not Found");
 
-            const isPasswordValid = bcrypt.compare(password, user.password);
+            const isPasswordValid = await bcrypt.compare(password, user.password);
             if(!isPasswordValid) return res.status(401).send("Invalid Password");
 
             const accessToken = generateAccessToken(user._id, user.email);
+
+            // res.json(accessToken);
 
             res.cookie('token', accessToken, {
                 httpOnly: true,
@@ -96,7 +101,7 @@ async function main () {
 
         app.post('/arrangements/add', verifyToken, async (req,res) => {
             try {
-                const { name, displayName, imageUrl , flowers } = req.body;
+                const { name, displayName, imageUrl, flowers } = req.body;
 
                 if(!name || !displayName || !imageUrl || !flowers) {
                     return res.status(400).send("missing required field");
@@ -107,7 +112,7 @@ async function main () {
                     imageUrl: imageUrl,
                     displayName: displayName,
                     flowers: flowers,
-                    createdBy: req.user.user_id,
+                    createdBy: new ObjectId(req.user.user_id),
                     reviews: []
                 })
 
@@ -139,7 +144,7 @@ async function main () {
                                 _id: new ObjectId(), 
                                 rating: rating, 
                                 content: content,
-                                createdBy: req.user.user_id 
+                                createdBy: new ObjectId(req.user.user_id) 
                             } 
                         } 
                     }
@@ -327,12 +332,13 @@ async function main () {
 
 
         // READ
-        app.get('/arrangements', async (req,res) => {
+        app.get('/arrangements', isUserRegistered, async (req,res) => {
             try {
                 const arrangements = await db.collection('arrangements').find().toArray();
                 // console.log(arrangements);
                 res.render('./fa/index', {
-                    arrangements: arrangements
+                    arrangements: arrangements,
+                    user: req.user
                 });
             } catch (error) {
                 console.error("Error fetching flower arrangements: ", error);
@@ -340,14 +346,15 @@ async function main () {
             }
         });
 
-        app.get('/arrangements/:arrangementId/details', async (req,res) => {
+        app.get('/arrangements/:arrangementId/details', isUserRegistered, async (req,res) => {
             try {  
                 const { arrangementId } = req.params;
 
                 const result = await db.collection('arrangements').findOne({_id: new ObjectId(arrangementId)});
                 // console.log(result);
                 res.render('./fa/details', {
-                    arrangement: result
+                    arrangement: result,
+                    user: req.user
                 });
             } catch (error) {
                 console.error("Error fetching flower arrangements: ", error);
