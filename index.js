@@ -12,6 +12,10 @@ const dbName = "flower_arrangements";
 const { connect } = require('./db');
 const { ObjectId } = require('mongodb');
 
+const bcrypt = require('bcrypt');
+
+const cookieParser = require('cookie-parser');
+
 let app = express();
 app.use(cors());
 app.set('view engine', 'ejs');
@@ -19,11 +23,12 @@ app.use(expressLayouts);
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'))
+app.use(cookieParser());
 
 app.set('layout', 'layout/base');
 
 const path = require('path');
-const { reverse } = require('dns');
+const { generateAccessToken, verifyToken } = require('./jsonwt');
 app.use('/css', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
 app.use('/js', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
 
@@ -35,24 +40,74 @@ async function main () {
             res.render('landing');
         });
         
-        // CREATE
-        app.get('/arrangements/add', (req,res) => {
-            res.render('./fa/add');
+        // REGISTRATION ROUTE
+        app.get('/registration', (req,res) => {
+            res.render('./users/regist');
         });
 
-        app.post('/arrangements/add', async (req,res) => {
+        app.post('/registration', async (req,res) => {
+            const { email, password } = req.body;
+
+            if(!email || !password) return res.status(400).send("Missing required fields");
+
+            const newUser = {
+                email,
+                password
+            }
+
+            await db.collection('users').insertOne(newUser);
+
+            res.redirect('/');
+        })
+
+        // LOGIN ROUTE
+        app.get('/login', (req,res) => {
+            res.render('./users/login');
+        });
+
+        app.post('/login', async (req,res) => {
+            const { email, password } = req.body;
+
+            if(!email || !password) return res.status(400).send("Missing required fields");
+
+            const user = await db.collection('users').findOne({ email: email })
+            if(!user) return res.status(404).send("User Not Found");
+
+            const isPasswordValid = bcrypt.compare(password, user.password);
+            if(!isPasswordValid) return res.status(401).send("Invalid Password");
+
+            const accessToken = generateAccessToken(user._id, user.email);
+
+            res.cookie('token', accessToken, {
+                httpOnly: true,
+                secure: false,
+                maxAge: 60 * 60 * 1000
+            })
+
+            res.redirect('/arrangements');
+        });
+
+
+        // CREATE
+        app.get('/arrangements/add', verifyToken, (req,res) => {
+            res.render('./fa/add');
+            // console.log(req.user);
+        });
+
+        app.post('/arrangements/add', verifyToken, async (req,res) => {
             try {
                 const { name, displayName, imageUrl , flowers } = req.body;
 
                 if(!name || !displayName || !imageUrl || !flowers) {
                     return res.status(400).send("missing required field");
                 }
-
+                    
                 await db.collection('arrangements').insertOne({
                     name: name,
                     imageUrl: imageUrl,
                     displayName: displayName,
                     flowers: flowers,
+                    createdBy: req.user.user_id,
                     reviews: []
                 })
 
@@ -64,11 +119,11 @@ async function main () {
             }
         });
 
-        app.get('/arrangements/:arrangementId/reviews/add', (req,res) => {
+        app.get('/arrangements/:arrangementId/reviews/add', verifyToken, (req,res) => {
             res.render('./review/add');
         });
 
-        app.post('/arrangements/:arrangementId/reviews/add', async (req,res) => {
+        app.post('/arrangements/:arrangementId/reviews/add', verifyToken, async (req,res) => {
             try {
                 const { rating, content } = req.body;
                 const { arrangementId } = req.params;
@@ -79,7 +134,15 @@ async function main () {
 
                 await db.collection('arrangements').updateOne(
                     { _id: new ObjectId(arrangementId) },
-                    { $push: { reviews: {_id: new ObjectId(), rating: rating, content: content } } }
+                    { $push: { 
+                        reviews: {
+                                _id: new ObjectId(), 
+                                rating: rating, 
+                                content: content,
+                                createdBy: req.user.user_id 
+                            } 
+                        } 
+                    }
                 )
 
                 res.redirect(`/arrangements/${arrangementId}/details`);
@@ -91,8 +154,9 @@ async function main () {
     
         });
 
+
         // UPDATE
-        app.get('/arrangements/:arrangementId/update', async (req,res) => {
+        app.get('/arrangements/:arrangementId/update', verifyToken, async (req,res) => {
             const { arrangementId } = req.params;
 
             const result = await db.collection('arrangements').findOne({ _id: new ObjectId(arrangementId) });
@@ -102,7 +166,7 @@ async function main () {
             });
         });
 
-        app.put('/arrangements/:arrangementId/update', async (req,res) => {
+        app.put('/arrangements/:arrangementId/update', verifyToken, async (req,res) => {
             try {
                 const { arrangementId } = req.params;
                 const { name, displayName, imageUrl, flowers } = req.body;
@@ -131,7 +195,7 @@ async function main () {
             }
         });
 
-        app.get('/arrangements/:arrangementId/reviews/:reviewId/update', async(req,res) => {
+        app.get('/arrangements/:arrangementId/reviews/:reviewId/update', verifyToken, async(req,res) => {
             const { arrangementId, reviewId } = req.params;
             const result = await db.collection('arrangements').findOne(
                 {
@@ -155,7 +219,7 @@ async function main () {
             });
         })
 
-        app.put('/arrangements/:arrangementId/reviews/:reviewId/update', async(req,res) => {
+        app.put('/arrangements/:arrangementId/reviews/:reviewId/update', verifyToken, async(req,res) => {
             try {
                 const { rating, content } = req.body;
                 const { arrangementId, reviewId } = req.params;
@@ -186,8 +250,9 @@ async function main () {
 
         });
 
+
         // DELETE
-        app.get('/arrangements/:arrangementId/delete', async (req,res) => {
+        app.get('/arrangements/:arrangementId/delete', verifyToken, async (req,res) => {
             const { arrangementId } = req.params;
 
             const result = await db.collection('arrangements').findOne({ _id: new ObjectId(arrangementId) });
@@ -197,7 +262,7 @@ async function main () {
             });
         });
 
-        app.delete('/arrangements/:arrangementId/delete', async (req,res) => {
+        app.delete('/arrangements/:arrangementId/delete', verifyToken, async (req,res) => {
             try {
                 const { arrangementId } = req.params;
 
@@ -211,7 +276,7 @@ async function main () {
             }
         });
 
-        app.get('/arrangements/:arrangementId/reviews/:reviewId/delete', async (req,res) => {
+        app.get('/arrangements/:arrangementId/reviews/:reviewId/delete', verifyToken, async (req,res) => {
             const { arrangementId, reviewId } = req.params;
             const result = await db.collection('arrangements').findOne(
                 {
@@ -235,7 +300,7 @@ async function main () {
             });
         });
 
-        app.delete('/arrangements/:arrangementId/reviews/:reviewId/delete', async (req,res) => {
+        app.delete('/arrangements/:arrangementId/reviews/:reviewId/delete', verifyToken, async (req,res) => {
             try {
                 const { arrangementId, reviewId } = req.params;
 
@@ -259,6 +324,7 @@ async function main () {
                 res.status(500).send("Internal server error");
             }
         });
+
 
         // READ
         app.get('/arrangements', async (req,res) => {
@@ -285,9 +351,11 @@ async function main () {
                 });
             } catch (error) {
                 console.error("Error fetching flower arrangements: ", error);
-                res.status(500).send("Internal server error");
+                res.status(404).send("Not Found");
             }
         });
+
+
 
     } catch(error) {
         console.error('Error connecting to MongoDB', error);
